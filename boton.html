@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATENTO ATENTO - Sistema de Seguimiento (V23 Silencio de Alerta)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* CSS BASE */
+        :root {
+            --naranja-principal: #FF6B00;
+            --naranja-gradient: linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%);
+            --rojo-alerta: #DC3545;
+            --verde-encontrado: #008000; 
+            --texto-oscuro: #2C3E50;
+            --texto-claro: #FFFFFF;
+            --fondo-app: #f0f4f8; 
+            --fondo-tarjeta: #FFFFFF;
+            --sombra-suave: 0 6px 15px rgba(0,0,0,0.1);
+            --borde-radius: 8px;
+            --transicion: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--fondo-app);
+            color: var(--texto-oscuro);
+            min-height: 100vh;
+        }
+        
+        #root {
+            min-height: 100vh;
+            padding: 20px 0;
+            background: var(--fondo-app);
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        /* 1. Header */
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            background: var(--naranja-gradient);
+            border-radius: var(--borde-radius);
+            box-shadow: var(--sombra-suave);
+            color: var(--texto-claro);
+        }
+
+        .logo {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+
+        .slogan {
+            font-size: 1.1rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        /* 2. Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+            background: var(--fondo-tarjeta);
+            padding: 20px;
+            border-radius: var(--borde-radius);
+            box-shadow: var(--sombra-suave);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            min-width: 320px;
+        }
+
+        .form-input {
+            padding: 12px 15px;
+            border: 1px solid #E9ECEF;
+            border-radius: 6px;
+            font-size: 15px;
+            flex: 1;
+            transition: var(--transicion);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--naranja-principal);
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+        }
+
+        /* 3. Botones */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transicion);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .btn i {
+            margin-right: 8px;
+            font-size: 14px;
+        }
+        
+        .btn-encontrado {
+            background: var(--verde-encontrado);
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 128, 0, 0.3);
+            flex-grow: 1;
+            font-size: 15px;
+        }
+
+        .btn-encontrado:hover {
+            background: #006400;
+            transform: translateY(-1px);
+        }
+        
+        .btn-action {
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #F8F9FA;
+            color: #6c757d;
+            border: 1px solid #DEE2E6;
+            margin-top: 8px;
+            margin-right: 5px;
+        }
+
+        .btn-action:hover {
+            background: #e9ecef;
+            color: var(--texto-oscuro);
+        }
+
+        /* Nuevo estilo para botón de Silencio */
+        .btn-mute {
+            background: #6c757d;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            min-width: 160px;
+        }
+        .btn-mute:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        /* 4. Grid de Ítems */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        /* 5. Tarjeta de Ítem */
+        .item-card {
+            border-radius: var(--borde-radius);
+            box-shadow: var(--sombra-suave);
+            border-left: 5px solid var(--naranja-principal);
+            transition: var(--transicion);
+            min-height: 250px;
+        }
+
+        .item-card.atrasado {
+            border-left: 5px solid var(--rojo-alerta);
+        }
+
+        .item-header {
+            background: #fdfdfd;
+            padding: 15px 20px;
+        }
+
+        .item-id {
+            font-size: 2.2rem; 
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: var(--texto-oscuro); 
+            line-height: 1.1;
+        }
+        
+        .timer {
+            font-size: 1.6rem;
+        }
+
+        .item-details {
+            padding: 15px 20px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #E9ECEF;
+        }
+        
+        /* Modal (Historial) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--fondo-tarjeta);
+            margin: auto;
+            padding: 20px;
+            border-radius: var(--borde-radius);
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transicion);
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #000;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        /* Estilos de Historial (para evitar errores de renderización) */
+        .history-title {
+            color: var(--texto-oscuro);
+            margin-bottom: 10px;
+        }
+        .history-title-found {
+            color: var(--verde-encontrado);
+            border-bottom: 1px solid #ddd; 
+            padding-bottom: 5px; 
+            margin-top: 15px;
+            font-size: 1.1rem;
+        }
+        .history-title-cancelled {
+            color: var(--rojo-alerta);
+            border-bottom: 1px solid #ddd; 
+            padding-bottom: 5px; 
+            margin-top: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .history-card {
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid;
+            font-size: 0.9rem;
+        }
+
+        .history-card.FOUND {
+            border-color: var(--verde-encontrado);
+            background-color: #E8F5EE;
+        }
+
+        .history-card.CANCELLED {
+            border-color: var(--rojo-alerta);
+            background-color: #FEEEEE;
+        }
+        
+        .history-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            .input-group {
+                min-width: 100%;
+            }
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useMemo } = React;
+        const TIMER_DURATION_SECONDS = 600; // 10 minutos
+        // *** DURACIÓN AJUSTADA: 2 segundos ***
+        const AUDIO_DURATION_MS = 2000; 
+        const FOUND_AUDIO_DURATION_MS = 2000; // 2 segundos
+        const VOICE_REPETITIONS = 3; 
+        const STORAGE_KEY = 'atentoAtentoItems';
+        const HISTORY_STORAGE_KEY = 'atentoAtentoHistory'; 
+        const ITEM_LIMIT = 15; 
+
+        // URLs de audio
+        const AUDIO_URLS = {
+            ALERT: 'https://soundbible.com/grab.php?id=1795&type=mp3', // Sirena Antiaérea (Atraso - 2s)
+            REQUEST: 'https://soundbible.com/grab.php?id=1411&type=mp3', // Tono de Confirmación (Solicitud - Corto)
+            FOUND: 'https://cdn.rawgit.com/schteppe/cannon.js/master/tools/demos/assets/ding.mp3', // Ding (Encontrado - 2s)
+        };
+
+        const speechSupported = 'speechSynthesis' in window;
+        
+        // --- Funciones de Audio ---
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const unlockedAudio = {}; 
+
+        const preloadAudio = (type) => {
+            const url = AUDIO_URLS[type.toUpperCase()];
+            if (unlockedAudio[type] && unlockedAudio[type].src === url) return;
+
+            unlockedAudio[type] = new Audio(url);
+            unlockedAudio[type].load();
+        };
+
+        const playSound = (type, durationMs = 0) => {
+            const audioInstance = unlockedAudio[type] || new Audio(AUDIO_URLS[type.toUpperCase()]);
+            audioInstance.currentTime = 0; 
+            
+            audioInstance.play().then(() => {
+                if (durationMs > 0) {
+                    setTimeout(() => {
+                        // El botón de silencio cancelará este timeout antes de que termine.
+                        audioInstance.pause();
+                        audioInstance.currentTime = 0;
+                    }, durationMs);
+                }
+            }).catch(e => {
+                console.warn(`Audio playback blocked for ${type}.`);
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log("AudioContext resumed, trying playback again.");
+                        audioInstance.play();
+                    });
+                }
+            });
+            unlockedAudio[type] = audioInstance;
+        };
+        
+        // *** NUEVA FUNCIÓN: Detener todas las alertas ***
+        const stopAllAlerts = () => {
+            // 1. Detener Síntesis de Voz
+            if (speechSupported) {
+                window.speechSynthesis.cancel();
+            }
+            // 2. Detener todos los sonidos
+            Object.values(unlockedAudio).forEach(audioInstance => {
+                audioInstance.pause();
+                audioInstance.currentTime = 0;
+            });
+        };
+
+        document.addEventListener('click', () => {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            preloadAudio('ALERT');
+            preloadAudio('REQUEST');
+            preloadAudio('FOUND');
+        }, { once: true });
+
+
+        // --- 1. Utilidades ---
+
+        const formatTime = (seconds) => {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        };
+
+        const generateItemId = () => {
+            return 'ITEM-' + Math.floor(10000 + Math.random() * 90000);
+        };
+        
+        const formatItemIdForSpeech = (itemId) => {
+            const numericPart = itemId.replace(/[^0-9]/g, ''); 
+            return numericPart.split('').join(' ');
+        };
+        
+        const speakText = (text) => {
+            if (!speechSupported) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-ES';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        };
+        
+        const repeatSpeakTextAndSound = (text, times) => {
+            if (!speechSupported) {
+                let soundCount = 0;
+                const soundInterval = setInterval(() => {
+                    playSound('REQUEST');
+                    soundCount++;
+                    if (soundCount >= times) {
+                        clearInterval(soundInterval);
+                    }
+                }, 1800);
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count >= times) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                playSound('REQUEST'); 
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+                count++;
+                
+            }, 1800); 
+        };
+        
+        // --- Componente de Historial ---
+
+        const HistoryModal = ({ history, onClose, show }) => {
+            const foundItems = history.filter(item => item.action === 'FOUND');
+            const cancelledItems = history.filter(item => item.action === 'CANCELLED');
+            
+            const downloadCSV = () => {
+                const headers = ["Fecha/Hora", "ID de Ítem", "Tiempo en Sistema (MM:SS)", "Tiempo en Sistema (Segundos)", "Estado al Remover", "Acción"];
+                
+                const rows = history.map(item => [
+                    `"${new Date(item.timestamp).toLocaleString()}"`,
+                    `"${item.id}"`,
+                    `"${formatTime(item.timeInSystem)}"`,
+                    `"${item.timeInSystem}"`, // Incluir tiempo en segundos para análisis
+                    `"${item.wasOverdue ? 'ATRASADO' : 'EN TIEMPO'}"`,
+                    `"${item.action}"`
+                ].join(','));
+                
+                const csvContent = [headers.join(','), ...rows].join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', 'historial_atento_atento.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            return (
+                <div className="modal" style={{display: show ? 'flex' : 'none'}} onClick={onClose}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <span className="close-modal" onClick={onClose}>&times;</span>
+                        <h3 className="history-title">Registro Histórico de Pedidos</h3>
+                        <p style={{fontSize: '0.9rem', color: '#6c757d'}}>Total de movimientos: {history.length}</p>
+                        
+                        <div className="history-actions">
+                            <button 
+                                className="btn btn-primary"
+                                style={{background: '#007bff'}}
+                                onClick={downloadCSV}
+                                disabled={history.length === 0}
+                            >
+                                <i className="fas fa-download"></i> Descargar CSV
+                            </button>
+                        </div>
+                        
+                        <div className="history-grid">
+                            {/* Columna Ítem Encontrados */}
+                            <div style={{minWidth: '300px'}}>
+                                <h4 className="history-title-found">
+                                    <i className="fas fa-check-circle"></i> Ítems Encontrados ({foundItems.length})
+                                </h4>
+                                {foundItems.length === 0 ? <p style={{marginTop: '10px', color: '#6c757d'}}>Aún no hay ítems encontrados.</p> :
+                                    foundItems.map(item => (
+                                        <div key={item.timestamp + item.id} className="history-card FOUND">
+                                            <strong>{item.id}</strong> ({formatTime(item.timeInSystem)})
+                                            <p style={{fontSize: '0.75rem', marginTop: '5px'}}>Removido: {new Date(item.timestamp).toLocaleTimeString()}</p>
+                                        </div>
+                                    ))}
+                            </div>
+
+                            {/* Columna Ítem Eliminados (No Encontrados/Cancelados) */}
+                            <div style={{minWidth: '300px'}}>
+                                <h4 className="history-title-cancelled">
+                                    <i className="fas fa-times-circle"></i> Ítems Eliminados ({cancelledItems.length})
+                                </h4>
+                                {cancelledItems.length === 0 ? <p style={{marginTop: '10px', color: '#6c757d'}}>Aún no hay ítems eliminados.</p> :
+                                    cancelledItems.map(item => (
+                                        <div key={item.timestamp + item.id} className="history-card CANCELLED">
+                                            <strong>{item.id}</strong> ({formatTime(item.timeInSystem)})
+                                            <p style={{fontSize: '0.75rem', marginTop: '5px'}}>Removido: {new Date(item.timestamp).toLocaleTimeString()}</p>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
+
+        // --- 2. Componentes UI Reutilizables ---
+
+        const Toast = ({ message, show, onClose }) => {
+            useEffect(() => {
+                if (show) {
+                    const timer = setTimeout(() => {
+                        onClose();
+                    }, 5000);
+                    return () => clearTimeout(timer);
+                }
+            }, [show, onClose]);
+
+            return (
+                <div className={`toast ${show ? 'show' : ''}`}>
+                    <div className="toast-content">
+                        <div className="toast-icon">
+                            <i className="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <strong>¡Alerta!</strong>
+                            <div id="alertMessage">{message}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ItemCard = React.memo(({ item, onRemove, onTimeElapsed, onFound, onResetTimer }) => {
+            const [isAlertFired, setIsAlertFired] = useState(item.timer <= 0);
+            const [timeRemaining, setTimeRemaining] = useState(item.timer);
+            const isOverdue = timeRemaining <= 0;
+            const startTime = useMemo(() => new Date(item.startTime), [item.startTime]);
+
+            useEffect(() => {
+                const intervalId = setInterval(() => {
+                    setTimeRemaining(prevTime => {
+                        const newTime = prevTime - 1;
+                        if (newTime <= 0 && !isAlertFired) {
+                            setIsAlertFired(true);
+                            if (item.timer > 0) {
+                                onTimeElapsed(item.id);
+                            }
+                        }
+                        return newTime;
+                    });
+                }, 1000);
+
+                return () => clearInterval(intervalId);
+            }, [item.id, isAlertFired, onTimeElapsed, item.timer]);
+
+            const handleReset = () => {
+                onResetTimer(item.id);
+                setIsAlertFired(false); 
+                setTimeRemaining(TIMER_DURATION_SECONDS); 
+            };
+
+            return (
+                <div className="item-card-wrapper">
+                    <div className={`item-card ${isOverdue ? 'atrasado' : ''}`}>
+                        <div className="item-header">
+                            <div className="item-id">{item.id}</div>
+                            <div className="timer-container">
+                                <div className="timer">{formatTime(Math.max(0, timeRemaining))}</div>
+                                <div className="timer-label">TIEMPO RESTANTE</div>
+                            </div>
+                        </div>
+
+                        <div className="item-image-container" style={{height: item.image ? '120px' : '80px', paddingTop: item.image ? '0' : '20px', background: item.image ? 'none' : '#F8F9FA'}}>
+                            {item.image ? (
+                                <img src={item.image} alt={`Imagen del ítem ${item.id}`} style={{objectFit: 'cover', width: '100%', height: '100%'}}/>
+                            ) : (
+                                <i className="fas fa-box-open" style={{fontSize: '48px', color: '#adb5bd'}}></i>
+                            )}
+                        </div>
+                        
+                        <div className="item-details">
+                            <div>
+                                <p><strong>Estado:</strong></p>
+                                <span className={`item-status ${isOverdue ? 'status-atrasado' : 'status-normal'}`}>
+                                    {isOverdue ? 'ATRASADO' : 'EN TIEMPO'}
+                                </span>
+                            </div>
+
+                            <div className="item-actions">
+                                <button 
+                                    className="btn btn-encontrado" 
+                                    onClick={() => onFound(item.id)}
+                                >
+                                    <i className="fas fa-check-circle"></i> Encontrado
+                                </button>
+                                
+                                <button 
+                                    className="btn btn-action" 
+                                    onClick={handleReset}
+                                >
+                                    <i className="fas fa-redo"></i> Reiniciar
+                                </button>
+                            </div>
+
+                            <div className="item-meta">
+                                <span><i className="fas fa-clock"></i> {startTime.toLocaleTimeString()}</span>
+                                <span><i className="fas fa-calendar"></i> {startTime.toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button className="close-item" onClick={() => onRemove(item.id)}>
+                        <i className="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            );
+        });
+
+
+        // --- 3. Componente Principal de la Aplicación ---
+
+        const App = () => {
+            // Inicializar ítems
+            const [items, setItems] = useState(() => {
+                const savedItems = localStorage.getItem(STORAGE_KEY);
+                if (savedItems) {
+                    const parsedItems = JSON.parse(savedItems);
+                    const now = new Date().getTime();
+                    return parsedItems.map(item => {
+                        const elapsed = Math.floor((now - new Date(item.startTime).getTime()) / 1000);
+                        const newTimer = TIMER_DURATION_SECONDS - elapsed;
+                        return { 
+                            ...item, 
+                            timer: Math.max(0, newTimer)
+                        };
+                    });
+                }
+                return [
+                    { id: 'ITEM-54321', startTime: new Date().toISOString(), timer: TIMER_DURATION_SECONDS, image: null },
+                    { id: 'ITEM-98765', startTime: new Date().toISOString(), timer: TIMER_DURATION_SECONDS + 120, image: null },
+                    { id: 'ITEM-12345', startTime: new Date(new Date().getTime() - 500000).toISOString(), timer: Math.max(0, TIMER_DURATION_SECONDS - 500), image: null }
+                ];
+            });
+            
+            // Inicializar historial
+            const [history, setHistory] = useState(() => {
+                const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+                return savedHistory ? JSON.parse(savedHistory) : [];
+            });
+
+            const [inputValue, setInputValue] = useState('');
+            const [toast, setToast] = useState({ show: false, message: '' });
+            const [showHistory, setShowHistory] = useState(false); // Estado para mostrar modal
+
+            // Persistir estados
+            useEffect(() => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            }, [items]);
+            
+            useEffect(() => {
+                localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+            }, [history]);
+
+
+            const showToast = (message) => {
+                setToast({ show: true, message });
+            };
+            
+            // Función para añadir al historial (incluyendo el cálculo de tiempo)
+            const logHistory = useCallback((item, actionType) => {
+                const now = new Date();
+                const startTime = new Date(item.startTime);
+                // Calcular el tiempo que el ítem estuvo en el sistema (en segundos)
+                const timeInSystem = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+                
+                const historyEntry = {
+                    id: item.id,
+                    timestamp: now.toISOString(),
+                    action: actionType,
+                    timeInSystem: timeInSystem, // AQUI se guarda el tiempo en segundos
+                    wasOverdue: item.timer <= 0,
+                };
+                
+                setHistory(prev => [historyEntry, ...prev]);
+            }, []);
+            
+            
+            const handleResetTimer = useCallback((itemId) => {
+                setItems(prevItems => prevItems.map(item => 
+                    item.id === itemId 
+                        ? { 
+                            ...item, 
+                            startTime: new Date().toISOString(), 
+                            timer: TIMER_DURATION_SECONDS 
+                        } 
+                        : item
+                ));
+            }, []);
+
+            // LÓGICA DE ÍTEM ENCONTRADO - Loggea como FOUND
+            const handleItemFound = useCallback((itemId) => {
+                setItems(prevItems => {
+                    const itemToRemove = prevItems.find(item => item.id === itemId);
+                    if (itemToRemove) {
+                        logHistory(itemToRemove, 'FOUND'); // Loggear al historial (con tiempo de búsqueda)
+                        
+                        const spokenItemDigits = formatItemIdForSpeech(itemId);
+                        const spokenText = `Ítem encontrado. ${spokenItemDigits}`;
+                        
+                        playSound('FOUND', FOUND_AUDIO_DURATION_MS); 
+                        speakText(spokenText); 
+                        showToast(`¡Ítem ${itemId} encontrado!`, true); 
+
+                        if (itemToRemove.image) {
+                            URL.revokeObjectURL(itemToRemove.image);
+                        }
+                        return prevItems.filter(item => item.id !== itemId);
+                    }
+                    return prevItems;
+                });
+            }, [logHistory]);
+
+
+            const handleAddItem = (rawInputValue, imageFile = null) => {
+                const finalId = rawInputValue.trim() || generateItemId();
+
+                // Límite de 15 ítems
+                if (items.length >= ITEM_LIMIT) {
+                    showToast(`Límite alcanzado: solo se permiten ${ITEM_LIMIT} ítems activos.`);
+                    return;
+                }
+
+                if (items.some(item => item.id === finalId)) {
+                    showToast(`El ítem ${finalId} ya existe`);
+                    return;
+                }
+
+                const newItem = {
+                    id: finalId,
+                    startTime: new Date().toISOString(),
+                    timer: TIMER_DURATION_SECONDS,
+                    image: imageFile ? URL.createObjectURL(imageFile) : null 
+                };
+                
+                setItems(prevItems => [...prevItems, newItem]);
+                setInputValue('');
+                
+                const spokenItemDigits = formatItemIdForSpeech(finalId);
+                const spokenText = `Ítem solicitado. ${spokenItemDigits}`;
+                
+                repeatSpeakTextAndSound(spokenText, VOICE_REPETITIONS); 
+
+                showToast(`Ítem ${finalId} agregado.`, true); 
+            };
+
+            // LÓGICA DE ELIMINAR ÍTEM - Loggea como CANCELLED
+            const handleRemoveItem = useCallback((itemId) => {
+                setItems(prevItems => {
+                    const itemToRemove = prevItems.find(item => item.id === itemId);
+                    if (itemToRemove) {
+                        logHistory(itemToRemove, 'CANCELLED'); // Loggear al historial (con tiempo de búsqueda)
+                        
+                        showToast(`Ítem ${itemId} eliminado (CANCELLED).`);
+                        
+                        if (itemToRemove.image) {
+                            URL.revokeObjectURL(itemToRemove.image);
+                        }
+                        return prevItems.filter(item => item.id !== itemId);
+                    }
+                    return prevItems;
+                });
+            }, [logHistory]);
+            
+            // LÓGICA DE TIEMPO AGOTADO - DURACIÓN AJUSTADA A 2 SEGUNDOS
+            const handleTimeElapsed = useCallback(() => {
+                // Si el usuario presiona Silenciar, la función stopAllAlerts cancelará la voz y el audio.
+                // Aquí solo iniciamos el proceso de alerta.
+
+                // Hacemos una pausa de 10ms antes de la sirena para asegurar que la sirena no pise la voz
+                // de la notificación de atraso (la notificación visual se dispara justo antes).
+                setTimeout(() => {
+                    playSound('ALERT', AUDIO_DURATION_MS); 
+                    speakText(`Pedido atrasado. Ítem ${formatItemIdForSpeech(itemId)}`); 
+                }, 10);
+            }, [stopAllAlerts]);
+
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleAddItem('', file); 
+                    e.target.value = null; 
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <div className="logo">ATENTO ATENTO</div>
+                        <div className="slogan">Sistema Profesional de Seguimiento de Pedidos (V23)</div>
+                    </header>
+                    
+                    <div className="controls">
+                        <div className="input-group">
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder={`Ingresa número de ítem (Límite: ${ITEM_LIMIT})`}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') handleAddItem(inputValue);
+                                }}
+                            />
+                            <button 
+                                className="btn btn-primary" 
+                                onClick={() => handleAddItem(inputValue)}
+                            >
+                                <i className="fas fa-plus-circle"></i> Agregar Ítem
+                            </button>
+                        </div>
+                        
+                        {/* Botones de control y historial */}
+                        <div style={{display: 'flex', gap: '15px'}}>
+                            <label className="btn btn-secondary" htmlFor="fileUpload">
+                                <i className="fas fa-camera"></i> Subir Imagen
+                                <input 
+                                    type="file" 
+                                    id="fileUpload" 
+                                    accept="image/*" 
+                                    style={{ display: 'none' }}
+                                    onChange={handleImageUpload}
+                                />
+                            </label>
+
+                            {/* Botón de Silencio - NUEVO */}
+                            <button 
+                                className="btn btn-mute" 
+                                onClick={stopAllAlerts} // Llama a la función global de detención
+                            >
+                                <i className="fas fa-volume-off"></i> Silenciar Alerta
+                            </button>
+                            
+                            <button 
+                                className="btn btn-secondary" 
+                                style={{background: '#6c757d', minWidth: '150px'}}
+                                onClick={() => setShowHistory(true)}
+                            >
+                                <i className="fas fa-history"></i> Historial ({history.length})
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="items-grid">
+                        {items.length === 0 ? (
+                            <div className="empty-state">
+                                <i className="fas fa-inbox"></i>
+                                <h3>No hay ítems en seguimiento</h3>
+                                <p>Agrega ítems manualmente para comenzar el seguimiento.</p>
+                            </div>
+                        ) : (
+                            items.map(item => (
+                                <ItemCard 
+                                    key={item.id} 
+                                    item={item} 
+                                    onRemove={handleRemoveItem}
+                                    onTimeElapsed={handleTimeElapsed}
+                                    onFound={handleItemFound} 
+                                    onResetTimer={handleResetTimer} 
+                                />
+                            ))
+                        )}
+                    </div>
+
+                    <Toast 
+                        message={toast.message} 
+                        show={toast.show} 
+                        onClose={() => setToast(prev => ({ ...prev, show: false }))} 
+                    />
+                    
+                    {/* Modal de Historial */}
+                    <HistoryModal 
+                        history={history}
+                        show={showHistory}
+                        onClose={() => setShowHistory(false)}
+                    />
+                </div>
+            );
+        };
+
+        // Renderizar la aplicación
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
